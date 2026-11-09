@@ -1,0 +1,28 @@
+{
+  "name": "whatsapp-tester",
+  "version": "2.0.0",
+  "description": "Check, one by one and at a human pace, whether a phone number has a WhatsApp account. Local CLI driven by your own WhatsApp Web session.",
+  "type": "module",
+  "bin": {
+    "wa-check": "src/cli.js"
+  },
+  "scripts": {
+    "check": "node src/cli.js",
+    "demo": "node src/cli.js --demo 5511961234567 551130000000 5541988887777",
+    "test": "node --test",
+    "postinstall": "playwright install chromium"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "libphonenumber-js": "^1.13.15",
+    "playwright": "^1.65.0"
+  },
+  "author": "Gabriel Carmo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gaacarmo/whatsapp_tester.git"
+  }
+}

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# WhatsApp Web browser profile (logged-in session). Never commit this.
+.wa-session/
+
+# Local usage counter for the rate limiter
+.wa-state/
+
+# Your input lists and results contain phone numbers. Keep them local.
+numbers.txt
+numeros.txt
+results*.csv
+resultado*.txt
+*.local.txt
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Playwright artifacts
+test-results/
+playwright-report/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
