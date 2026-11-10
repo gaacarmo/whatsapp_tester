@@ -9,7 +9,7 @@ import { c, log } from './log.js';
 import { normalizePhone, parseNumberList } from './phone.js';
 import { UsageLedger, nextGap, resolveLimits } from './rate-limit.js';
 import { ResultsFile } from './results.js';
-import { DemoWhatsApp, WhatsAppWeb } from './whatsapp.js';
+import { DemoWhatsApp, SessionLostError, WhatsAppWeb } from './whatsapp.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PROFILE_DIR = process.env.WA_PROFILE_DIR ?? path.join(ROOT, '.wa-session');
@@ -135,6 +135,7 @@ async function main() {
   };
   process.on('SIGINT', onSigint);
 
+  let sessionLost = false;
   const tally = { [STATUS.ON]: 0, [STATUS.OFF]: 0, [STATUS.UNKNOWN]: 0 };
   try {
     log.step(demo ? 'Starting demo session…' : 'Opening WhatsApp Web…');
@@ -154,6 +155,12 @@ async function main() {
       try {
         status = await wa.check(n.digits);
       } catch (err) {
+        if (err instanceof SessionLostError) {
+          log.blank();
+          log.error(`${err.message} Stopped before ${n.masked}; earlier results are saved.`);
+          sessionLost = true;
+          break;
+        }
         status = STATUS.UNKNOWN;
         log.warn(`${n.masked}: ${err.message.split('\n')[0]}`);
       }
@@ -180,7 +187,7 @@ async function main() {
   if (results) log.info(`Saved to ${path.relative(process.cwd(), results.file) || results.file}`);
   if (ledger) log.info(c.dim(`${ledger.remaining(limits.perDay)} checks left in the rolling 24h window`));
   log.blank();
-  return interrupted ? 130 : 0;
+  return sessionLost ? 1 : interrupted ? 130 : 0;
 }
 
 main().then(

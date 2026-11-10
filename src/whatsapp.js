@@ -4,6 +4,9 @@ import { STATUS, classify, readPageState } from './detect.js';
 const HOME = 'https://web.whatsapp.com/';
 const POLL_MS = 500;
 
+/** The WhatsApp Web session ended mid-run; every later check would fail too. */
+export class SessionLostError extends Error {}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -68,7 +71,7 @@ export class WhatsAppWeb {
     while (Date.now() < deadline) {
       // evaluate() can throw while WhatsApp redirects internally; just poll again.
       const state = await this.page.evaluate(readPageState).catch(() => null);
-      if (state?.loggedOut) throw new Error('WhatsApp Web logged out. Run again and scan the QR code.');
+      if (state?.loggedOut) throw new SessionLostError('WhatsApp Web logged out. Run again and scan the QR code.');
       const verdict = state && classify(state);
       if (verdict) return verdict;
       await sleep(POLL_MS);

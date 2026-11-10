@@ -2,19 +2,7 @@
 
 Check whether a phone number has a WhatsApp account. One number at a time, at a slow pace, using **your own** WhatsApp Web session in a visible browser window.
 
-```
-WhatsApp Tester
-
-› Opening WhatsApp Web…
-› Checking 3 numbers, one at a time
-
-  1/3  +55 ••••••• 4567   ●  on WhatsApp
-  2/3  +55 •••••• 0000    ?  unknown
-  3/3  +55 ••••••• 7777   ○  not on WhatsApp
-
-  3 checked  ·  1 on  ·  1 not  ·  1 unknown
-· Saved to results.csv
-```
+<p align="center"><img src="docs/demo.svg" alt="wa-check demo: three numbers, one on WhatsApp, one not, one unknown" width="760"></p>
 
 Try it offline, no WhatsApp needed: `npm run demo`.
 
@@ -65,6 +53,10 @@ The 24h counter lives in `.wa-state/usage.json` and stores timestamps only.
 - Automating WhatsApp Web may break [WhatsApp's Terms of Service](https://www.whatsapp.com/legal/terms-of-service) and can get the account that runs it restricted. Use a number you are willing to risk.
 - Phone numbers are personal data (LGPD / GDPR). Keep input and result files private; they are git-ignored by default.
 - Do not use this to build lead lists, scrape, or contact people who did not agree to it.
+
+## Why there is no hosted version
+
+Each check needs a logged-in WhatsApp account, and running it as a public web service would mean lending that account to strangers, against WhatsApp's Terms. So this stays a local tool by design: `npm run demo` shows the full flow offline, and the real thing runs on your machine with your session.
 
 ## Development
 
