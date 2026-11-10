@@ -4,7 +4,7 @@ Check whether a phone number has a WhatsApp account. One number at a time, at a 
 
 <p align="center"><img src="docs/demo.svg" alt="wa-check demo: three numbers, one on WhatsApp, one not, one unknown" width="760"></p>
 
-Try it offline, no WhatsApp needed: `npm run demo`.
+**[Live demo →](https://gaacarmo.github.io/whatsapp_tester/)** (simulated, no real lookups). Or offline in your terminal: `npm run demo`.
 
 ## How it works
 
@@ -56,7 +56,7 @@ The 24h counter lives in `.wa-state/usage.json` and stores timestamps only.
 
 ## Why there is no hosted version
 
-Each check needs a logged-in WhatsApp account, and running it as a public web service would mean lending that account to strangers, against WhatsApp's Terms. So this stays a local tool by design: `npm run demo` shows the full flow offline, and the real thing runs on your machine with your session.
+Each check needs a logged-in WhatsApp account, and running it as a public web service would mean lending that account to strangers, against WhatsApp's Terms. So this stays a local tool by design: the [demo page](https://gaacarmo.github.io/whatsapp_tester/) and `npm run demo` show the full flow with simulated results, and the real thing runs on your machine with your session.
 
 ## Development
 

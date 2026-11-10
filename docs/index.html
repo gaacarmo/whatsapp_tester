@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhatsApp Tester</title>
+<meta name="description" content="A local CLI that checks, one number at a time, whether a phone number is on WhatsApp. Interactive demo with simulated results.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e0f12">
+<meta property="og:title" content="WhatsApp Tester">
+<meta property="og:description" content="Is this number on WhatsApp? A careful, rate-limited local CLI. Interactive demo, no real lookups.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gaacarmo.github.io/whatsapp_tester/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316171b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%235cc68a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0e0f12;
+    --bg-2: #131419;
+    --panel: #16171c;
+    --line: #23252c;
+    --line-soft: #1b1d22;
+    --text: #e6e7eb;
+    --muted: #8a8d97;
+    --faint: #5a5d66;
+    --on: #5cc68a;
+    --off: #e0726e;
+    --unknown: #d9b45a;
+    --accent: #5fb3c4;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Helvetica, Arial, sans-serif;
+    --radius: 14px;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 500px at 50% -120px, rgba(92, 198, 138, .07), transparent 70%),
+      var(--bg);
+    color: var(--text);
+    font: 16px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: rgba(92, 198, 138, .25); }
+  a { color: inherit; text-decoration-color: var(--faint); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--text); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  header.top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 0; font-size: 14px; color: var(--muted);
+  }
+  header.top a { text-decoration: none; }
+  header.top a:hover { color: var(--text); }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--on); box-shadow: 0 0 0 4px rgba(92, 198, 138, .12); }
+  nav { display: flex; gap: 22px; }
+
+  .hero { padding: 64px 0 36px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 12px/1 var(--mono); letter-spacing: .04em; color: var(--muted);
+    padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2);
+  }
+  .eyebrow b { color: var(--unknown); font-weight: 500; }
+  h1 {
+    font-size: clamp(34px, 6vw, 52px); line-height: 1.08; letter-spacing: -.025em;
+    font-weight: 600; margin: 22px 0 16px;
+  }
+  h1 span { color: var(--muted); font-weight: 500; }
+  .lede { color: var(--muted); font-size: 18px; max-width: 580px; margin: 0; }
+
+  /* Terminal */
+  .term {
+    margin: 40px 0 12px;
+    background: linear-gradient(180deg, #17181d, #121317);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .03);
+    overflow: hidden;
+  }
+  .term-bar {
+    display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft); color: var(--faint); font: 12px var(--sans);
+  }
+  .term-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2c2e35; display: inline-block; }
+  .term-bar .title { flex: 1; text-align: center; margin-right: 49px; }
+  .term-body {
+    padding: 20px 22px 22px; font: 14px/1.75 var(--mono); color: #c9cbd1;
+    min-height: 318px; overflow-x: auto;
+  }
+  .term-body .line { white-space: pre; opacity: 0; transform: translateY(3px); animation: in .35s var(--ease) forwards; }
+  @keyframes in { to { opacity: 1; transform: none; } }
+  .c-muted { color: var(--faint); }
+  .c-accent { color: var(--accent); }
+  .c-on { color: var(--on); }
+  .c-off { color: var(--off); }
+  .c-unknown { color: var(--unknown); }
+  .c-warn { color: var(--unknown); }
+  .c-bold { color: #eef0f3; font-weight: 600; }
+  .spin { display: inline-block; width: 1ch; color: var(--faint); }
+  .cursor { display: inline-block; width: .6ch; height: 1.05em; vertical-align: -2px; background: #c9cbd1; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 6px; }
+  .chip {
+    font: 13px var(--mono); color: var(--muted);
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 12px; cursor: pointer; transition: color .2s, border-color .2s, background .2s;
+  }
+  .chip:hover { color: var(--text); border-color: #33363e; }
+  .chip[aria-pressed="true"] { color: var(--text); border-color: #3a3d46; background: #1a1c21; }
+  .chip.bad { text-decoration: line-through; text-decoration-color: var(--faint); }
+  .run {
+    margin-left: auto;
+    font: 500 14px var(--sans); color: #0e0f12; background: #e9eaee;
+    border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer;
+    transition: transform .15s var(--ease), background .2s, opacity .2s;
+  }
+  .run:hover { background: #fff; }
+  .run:active { transform: scale(.98); }
+  .run:disabled { opacity: .45; cursor: default; }
+  .note { font-size: 13px; color: var(--faint); margin: 8px 0 0; }
+
+  section { padding: 56px 0 0; }
+  h2 { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 0 0 22px; }
+
+  .steps { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }
+  .step { background: var(--bg); padding: 20px 22px; display: grid; grid-template-columns: 34px 1fr; gap: 6px 14px; }
+  .step .n { font: 13px var(--mono); color: var(--faint); padding-top: 2px; }
+  .step h3 { margin: 0; font-size: 16px; font-weight: 500; }
+  .step p { grid-column: 2; margin: 0; color: var(--muted); font-size: 15px; }
+  code { font: 13.5px var(--mono); color: #d3d5db; background: #1a1b20; border: 1px solid var(--line-soft); padding: 1px 6px; border-radius: 6px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat { border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 18px 18px 16px; background: var(--bg-2); }
+  .stat b { display: block; font: 600 28px/1.1 var(--sans); letter-spacing: -.02em; }
+  .stat span { color: var(--muted); font-size: 14px; }
+
+  .verdicts { display: grid; gap: 10px; }
+  .verdict { display: grid; grid-template-columns: 22px 170px 1fr; gap: 12px; align-items: baseline; font-size: 15px; }
+  .verdict .sym { font-family: var(--mono); }
+  .verdict .name { font-family: var(--mono); font-size: 14px; }
+  .verdict p { margin: 0; color: var(--muted); }
+
+  .care { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; color: var(--muted); }
+  .care li { padding-left: 22px; position: relative; }
+  .care li::before { content: ""; position: absolute; left: 4px; top: .7em; width: 6px; height: 1px; background: var(--faint); }
+  .care strong { color: var(--text); font-weight: 500; }
+
+  .install pre {
+    margin: 0; padding: 18px 20px; background: var(--bg-2); border: 1px solid var(--line-soft);
+    border-radius: var(--radius); font: 14px/1.8 var(--mono); color: #c9cbd1; overflow-x: auto;
+  }
+  .install pre .c-muted { user-select: none; }
+
+  footer {
+    margin: 72px 0 0; padding: 26px 0 40px; border-top: 1px solid var(--line-soft);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--faint);
+  }
+  footer nav { gap: 18px; }
+  footer a { text-decoration: none; color: var(--muted); }
+  footer a:hover { color: var(--text); }
+
+  .show-sm { display: none; }
+  @media (max-width: 620px) {
+    .show-sm { display: inline; }
+        .hero { padding-top: 40px; }
+    .lede { font-size: 16.5px; }
+    .term-body { font-size: 11.5px; padding: 16px 14px; min-height: 300px; }
+    .term-body .line { white-space: pre-wrap; word-break: break-word; }
+    .hide-sm { display: none; }
+    .stats { grid-template-columns: 1fr; }
+    .verdict { grid-template-columns: 22px 1fr; }
+    .verdict p { grid-column: 2; }
+    .run { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .term-body .line { animation: none; opacity: 1; transform: none; }
+    .cursor { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><span class="dot" aria-hidden="true"></span>WhatsApp Tester</a>
+    <nav class="links">
+      <a class="hide-sm" href="#how">How it works</a>
+      <a href="https://github.com/gaacarmo/whatsapp_tester#readme">README</a>
+      <a href="https://github.com/gaacarmo/whatsapp_tester">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <span class="eyebrow"><b>●</b> Live demo<span class="hide-sm"> · simulated results, no real lookups</span><span class="show-sm"> · simulated</span></span>
+      <h1>Is this number on WhatsApp?<br><span>One careful check at a time.</span></h1>
+      <p class="lede">A small local CLI that opens your own WhatsApp Web in a visible browser and tells you whether a number has an account. Built with hard limits, so it stays a spot-check tool and never becomes a scraper.</p>
+    </div>
+
+    <div class="term" role="region" aria-label="Simulated terminal">
+      <div class="term-bar"><i></i><i></i><i></i><span class="title">wa-check · demo</span></div>
+      <div class="term-body" id="out" aria-live="polite"></div>
+    </div>
+
+    <div class="controls" role="group" aria-label="Example numbers">
+      <button class="chip" type="button" aria-pressed="true" data-n="+55 11 96123-4567">+55 11 96123-4567</button>
+      <button class="chip" type="button" aria-pressed="true" data-n="+55 21 98765-4320">+55 21 98765-4320</button>
+      <button class="chip" type="button" aria-pressed="true" data-n="+55 11 3000-0000">+55 11 3000-0000</button>
+      <button class="chip" type="button" aria-pressed="false" data-n="+1 201 555 0123">+1 201 555 0123</button>
+      <button class="chip bad" type="button" aria-pressed="true" data-n="12345">12345</button>
+      <button class="run" id="run" type="button">Run demo check</button>
+    </div>
+    <p class="note">Fictional example numbers. Verdicts are simulated in your browser and pauses are shortened (the real tool waits 8–15 s between checks). Nothing is sent anywhere.</p>
+
+    <section id="how">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step"><span class="n">01</span><h3>Your session, your machine</h3><p>Playwright opens a real Chromium window with a persistent profile. You scan the QR code once; the session stays local and is never committed.</p></div>
+        <div class="step"><span class="n">02</span><h3>Validate before touching anything</h3><p>Every input is parsed with <code>libphonenumber-js</code>. Invalid entries are skipped with a reason, duplicates are removed, and numbers are masked in every log line.</p></div>
+        <div class="step"><span class="n">03</span><h3>Open the chat link, read the page</h3><p>For each number it opens <code>web.whatsapp.com/send?phone=…</code> and waits for one clear signal: the message box appears, or WhatsApp says the number is invalid.</p></div>
+        <div class="step"><span class="n">04</span><h3>Save as it goes</h3><p>Each result is appended to <code>results.csv</code> the moment it's known, so Ctrl+C, a crash or a logout never loses finished work.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Three honest answers</h2>
+      <div class="verdicts">
+        <div class="verdict"><span class="sym c-on">●</span><span class="name c-on">on WhatsApp</span><p>The chat opened and the message box is on screen.</p></div>
+        <div class="verdict"><span class="sym c-off">○</span><span class="name c-off">not on WhatsApp</span><p>WhatsApp showed its "invalid number" dialog, in any of six languages.</p></div>
+        <div class="verdict"><span class="sym c-unknown">?</span><span class="name c-unknown">unknown</span><p>Anything else. Slow page, network hiccup, UI change. It never guesses.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Limits, by design</h2>
+      <div class="stats">
+        <div class="stat"><b>25</b><span>numbers per run</span></div>
+        <div class="stat"><b>60</b><span>checks per rolling 24 h</span></div>
+        <div class="stat"><b>8–15 s</b><span>pause between checks</span></div>
+      </div>
+      <p class="note">Hard ceilings in code. Environment variables can make them stricter, never looser.</p>
+    </section>
+
+    <section>
+      <h2>Responsible use</h2>
+      <ul class="care">
+        <li><strong>Only numbers you have a reason to check:</strong> your contacts, customers who gave you their number.</li>
+        <li><strong>Automating WhatsApp Web can break its Terms</strong> and get the account that runs it restricted. That's why there is no hosted version: this page is a demo, the real thing runs on your machine.</li>
+        <li><strong>Phone numbers are personal data</strong> under LGPD and GDPR. Input and result files are git-ignored by default.</li>
+      </ul>
+    </section>
+
+    <section class="install">
+      <h2>Run it locally</h2>
+<pre><span class="c-muted">$ </span>git clone https://github.com/gaacarmo/whatsapp_tester.git
+<span class="c-muted">$ </span>cd whatsapp_tester &amp;&amp; npm install
+<span class="c-muted">$ </span>npm run demo            <span class="c-muted"># offline, like this page</span>
+<span class="c-muted">$ </span>npm run check -- "+55 41 99999-8888"</pre>
+      <p class="note">Node.js 20+. Full setup and options in the <a href="https://github.com/gaacarmo/whatsapp_tester#readme">README</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span>Built by <a href="https://gabrielcarmo.com">Gabriel Carmo</a> · MIT</span>
+    <nav>
+      <a href="https://github.com/gaacarmo/whatsapp_tester">Source</a>
+      <a href="https://github.com/gaacarmo/whatsapp_tester#readme">README</a>
+      <a href="https://gabrielcarmo.com">gabrielcarmo.com</a>
+    </nav>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const out = document.getElementById('out');
+  const runBtn = document.getElementById('run');
+  const chips = [...document.querySelectorAll('.chip')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+  const esc = (s) => s.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]));
+
+  // Same idea as the CLI's offline --demo: deterministic, fake, local.
+  function normalize(raw) {
+    const plus = raw.trim().startsWith('+');
+    let d = raw.replace(/\D/g, '');
+    if (d.length < 8 || d.length > 15) return { ok: false, reason: 'wrong length' };
+    if (!plus && (d.length === 10 || d.length === 11)) d = '55' + d;
+    const cc = d.startsWith('55') ? '55' : d.startsWith('1') ? '1' : d.slice(0, 2);
+    const rest = d.slice(cc.length);
+    return { ok: true, digits: d, masked: `+${cc} ${'•'.repeat(rest.length - 4)} ${rest.slice(-4)}` };
+  }
+  function verdict(d) {
+    if (d.endsWith('0000')) return 'unknown';
+    const sum = [...d].reduce((a, n) => a + +n, 0);
+    return sum % 3 === 0 ? 'off' : 'on';
+  }
+  const LABEL = {
+    on: '<span class="c-on">●  on WhatsApp</span>',
+    off: '<span class="c-off">○  not on WhatsApp</span>',
+    unknown: '<span class="c-unknown">?  unknown</span>',
+  };
+
+  function line(html = '') {
+    const el = document.createElement('div');
+    el.className = 'line';
+    el.innerHTML = html || '&nbsp;';
+    out.appendChild(el);
+    return el;
+  }
+  function prompt(withCursor) {
+    const nums = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => `"${c.dataset.n}"`);
+    return line(`<span class="c-muted">$</span> npm run check -- ${esc(nums.join(' ') || '…')}${withCursor ? ' <span class="cursor"></span>' : ''}`);
+  }
+  function idle() {
+    out.innerHTML = '';
+    prompt(true);
+  }
+
+  async function run() {
+    const picked = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.n);
+    if (!picked.length) return;
+    runBtn.disabled = true;
+    chips.forEach((c) => (c.disabled = true));
+    out.innerHTML = '';
+    prompt(false);
+    await wait(380);
+    line();
+    line('<span class="c-bold">WhatsApp Tester</span><span class="c-muted">  ·  demo mode, no real lookups</span>');
+    line();
+
+    const valid = [];
+    for (const raw of picked) {
+      const r = normalize(raw);
+      if (r.ok) valid.push(r);
+      else { await wait(160); line(`<span class="c-warn">!</span> Skipping "${esc(raw)}": ${r.reason}`); }
+    }
+    await wait(240);
+    line('<span class="c-accent">›</span> Opening WhatsApp Web…');
+    await wait(620);
+    line('<span class="c-accent">›</span> Session found, already logged in');
+    await wait(300);
+    line(`<span class="c-accent">›</span> Checking ${valid.length} number${valid.length === 1 ? '' : 's'}, one at a time`);
+    line();
+
+    const tally = { on: 0, off: 0, unknown: 0 };
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    for (const [i, n] of valid.entries()) {
+      const counter = `<span class="c-muted">${i + 1}/${valid.length}</span>`;
+      const el = line(`  ${counter}  ${n.masked.padEnd(18)} <span class="spin">⠋</span>`);
+      const spin = el.querySelector('.spin');
+      let f = 0;
+      const t = setInterval(() => (spin.textContent = frames[++f % frames.length]), 80);
+      await wait(900 + (i % 2) * 350);
+      clearInterval(t);
+      const v = verdict(n.digits);
+      tally[v]++;
+      el.innerHTML = `  ${counter}  ${n.masked.padEnd(18)} ${LABEL[v]}`;
+      if (i < valid.length - 1) {
+        const p = line(`<span class="c-muted">     pausing before the next check…</span>`);
+        await wait(700);
+        p.remove();
+      }
+    }
+
+    line();
+    line(`  <span class="c-bold">${valid.length}</span> checked  <span class="c-muted">·</span>  <span class="c-on">${tally.on}</span> on  <span class="c-muted">·</span>  <span class="c-off">${tally.off}</span> not  <span class="c-muted">·</span>  <span class="c-unknown">${tally.unknown}</span> unknown`);
+    line(`<span class="c-muted">· ${valid.length ? 'Results would be saved to results.csv' : 'Nothing to check'}</span>`);
+    line(`<span class="c-muted">· ${60 - valid.length} checks left in the rolling 24h window</span>`);
+
+    runBtn.disabled = false;
+    runBtn.textContent = 'Run again';
+    chips.forEach((c) => (c.disabled = false));
+  }
+
+  chips.forEach((c) =>
+    c.addEventListener('click', () => {
+      c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
+      if (!runBtn.disabled) { runBtn.textContent = 'Run demo check'; idle(); }
+      runBtn.disabled = !chips.some((x) => x.getAttribute('aria-pressed') === 'true');
+    }),
+  );
+  runBtn.addEventListener('click', run);
+  idle();
+})();
+</script>
+</body>
+</html>
